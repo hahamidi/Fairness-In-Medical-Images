@@ -1,0 +1,65 @@
+
+seed_everything: 37
+trainer:
+  default_root_dir: ./results/vector_disese_cls
+  accelerator: cuda
+  devices: 1
+  log_every_n_steps: 1
+
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.RichProgressBar
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: 'val_loss'
+        patience: 5
+        mode: 'min'  # or 'max' depending on your metric
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: 'val_loss'
+        mode: 'min'  # or 'max' depending on your metric
+        save_top_k: 1  # save only the best checkpoint
+        dirpath: ./results/vector_disese_cls/checkpoints
+        filename: 'best_val_loss-{epoch:02d}-{val_loss:.4f}'
+
+data: #data.DataModule
+  train_dataset:
+    class_path: data.dataset_class.VecDataset
+    init_args:
+      data_df: ./datasets/dataset_csv/train_data_path.csv
+      labels_df: ./datasets/dataset_csv/train_data_labels.csv
+      info_df: ./datasets/dataset_csv/train_data_all.csv
+      data_path: ./datasets/mimic-cxr/files
+  val_dataset:
+    class_path: data.dataset_class.VecDataset
+    init_args:
+      data_df: ./datasets/dataset_csv/val_data_path.csv
+      labels_df: ./datasets/dataset_csv/val_data_labels.csv
+      info_df: ./datasets/dataset_csv/val_data_all.csv
+      data_path: ./datasets/mimic-cxr/files
+  test_dataset:
+    class_path: data.dataset_class.VecDataset
+    init_args:
+      data_df: ./datasets/dataset_csv/test_data_path.csv
+      labels_df: ./datasets/dataset_csv/test_data_labels.csv
+      info_df: ./datasets/dataset_csv/test_data_all.csv
+      data_path: ./datasets/mimic-cxr/files
+
+  batch_size: 512
+  num_workers: 20
+
+      
+
+        
+
+
+model: # models.module.CLS
+  model:
+    class_path: models.vector.models.CustomModel
+    init_args:
+      embeddings_size: 1376
+      hidden_layer_sizes: [768, 256,128]
+      dropout_rate: 0.1
+      num_classes: 14
+  criterion: #
+    class_path: torch.nn.BCEWithLogitsLoss
+  save_probabilities_path: ./results/vector_disese_cls/probabilities
